@@ -1,11 +1,14 @@
-const express = require('express');
-const app = express();
-const port = process.env.PORT || 3000;
+const fs = require('fs');
+const path = require('path');
 
-app.get('/', (req, res) => {
-  res.send('Hello from A-pian Client List!');
-});
-
-app.listen(port, () => {
-  console.log(`Server running on port ${port}`);
+// Serve login.txt content
+app.get('/login', (req, res) => {
+  const filePath = path.join(__dirname, 'login.txt');
+  fs.readFile(filePath, 'utf8', (err, data) => {
+    if (err) {
+      res.status(500).send('Error reading login.txt');
+    } else {
+      res.send(`<pre>${data}</pre>`); // HTML pre tag မှာ ပြ
+    }
+  });
 });
