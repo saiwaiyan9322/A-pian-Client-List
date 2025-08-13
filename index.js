@@ -4,15 +4,22 @@ const path = require('path');
 const app = express();
 const port = process.env.PORT || 3000;
 
+// Body parser for form
 app.use(express.urlencoded({ extended: true }));
+// Serve static frontend files
 app.use(express.static(path.join(__dirname, 'public')));
 
-// Serve login page
+// Main welcome page
+app.get('/', (req, res) => {
+  res.sendFile(path.join(__dirname, 'public', 'index.html'));
+});
+
+// Login page
 app.get('/login', (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'login.html'));
 });
 
-// Handle login form submission
+// Login form submission
 app.post('/login', (req, res) => {
   const username = req.body.username;
   const password = req.body.password;
@@ -21,7 +28,6 @@ app.post('/login', (req, res) => {
   fs.readFile(loginFile, 'utf8', (err, data) => {
     if (err) return res.status(500).send('Error reading login.txt');
 
-    // Simple check: username/password exist in login.txt (each line: username,password)
     const lines = data.split('\n');
     const valid = lines.some(line => {
       const [u, p] = line.trim().split(',');
@@ -36,7 +42,7 @@ app.post('/login', (req, res) => {
   });
 });
 
-// Serve data.txt only after successful login
+// Data page – accessible only after login
 app.get('/data', (req, res) => {
   const dataFile = path.join(__dirname, 'data.txt');
   fs.readFile(dataFile, 'utf8', (err, data) => {
