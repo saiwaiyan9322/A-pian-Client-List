@@ -1,0 +1,13 @@
+{
+  "name": "a-pian-client-list",
+  "version": "1.0.0",
+  "description": "A simple Node.js project for A-pian Client List",
+  "main": "index.js",
+  "scripts": {
+    "start": "node index.js"
+  },
+  "author": "Sai Wai Yan",
+  "license": "ISC",
+  "dependencies": {
+  }
+}
