@@ -1,0 +1,620 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Resizable Table with Password Protection</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .container {
+            max-width: 100%;
+            overflow-x: auto;
+        }
+        .toolbar {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 15px;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+        .toolbar-group {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+        }
+        button {
+            padding: 8px 12px;
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+        button:hover {
+            background-color: #45a049;
+        }
+        button.toggle-btn {
+            background-color: #2196F3;
+        }
+        button.toggle-btn:hover {
+            background-color: #0b7dda;
+        }
+        button.logout {
+            background-color: #f44336;
+        }
+        button.logout:hover {
+            background-color: #d32f2f;
+        }
+        select {
+            padding: 8px;
+            border-radius: 4px;
+            border: 1px solid #ddd;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            background-color: white;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+            table-layout: fixed;
+        }
+        th, td {
+            border: 1px solid #ddd;
+            padding: 8px;
+            text-align: left;
+            position: relative;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+        th {
+            background-color: #f2f2f2;
+            position: sticky;
+            top: 0;
+            cursor: col-resize;
+            user-select: none;
+        }
+        .resize-handle {
+            width: 5px;
+            height: 100%;
+            position: absolute;
+            top: 0;
+            right: 0;
+            cursor: col-resize;
+            z-index: 1;
+            background-color: rgba(0,0,0,0.1);
+        }
+        th:hover .resize-handle {
+            background-color: rgba(0,0,0,0.3);
+        }
+        tr:nth-child(even) {
+            background-color: #f9f9f9;
+        }
+        tr:hover {
+            background-color: #f1f1f1;
+        }
+        input {
+            padding: 6px;
+            border: 1px solid #ddd;
+            border-radius: 3px;
+            width: 100%;
+            box-sizing: border-box;
+        }
+        .search-container {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        #searchInput {
+            padding: 8px;
+            min-width: 200px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+        }
+        .password-modal {
+            display: none;
+            position: fixed;
+            z-index: 100;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0,0,0,0.4);
+        }
+        .modal-content {
+            background-color: #fefefe;
+            margin: 15% auto;
+            padding: 20px;
+            border-radius: 5px;
+            width: 300px;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+        }
+        .edit-lock {
+            cursor: pointer;
+            font-size: 18px;
+            color: #777;
+            transition: color 0.3s;
+        }
+        .edit-lock.unlocked {
+            color: #4CAF50;
+        }
+        .compact-mode {
+            font-size: 12px;
+        }
+        .compact-mode th, 
+        .compact-mode td {
+            padding: 4px 6px !important;
+        }
+        .column-width-display {
+            position: absolute;
+            top: -25px;
+            right: 0;
+            background: #333;
+            color: white;
+            padding: 2px 5px;
+            border-radius: 3px;
+            font-size: 12px;
+            display: none;
+        }
+        #passwordError {
+            color: red;
+            margin-top: 10px;
+            display: none;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="toolbar">
+            <div class="toolbar-group">
+                <button id="toggleSizeBtn" class="toggle-btn">
+                    <i class="fas fa-expand"></i>
+                    <span>Toggle Size</span>
+                </button>
+                <button id="addRowBtn">
+                    <i class="fas fa-plus"></i>
+                    <span>Add Row</span>
+                </button>
+                <button id="saveBtn">
+                    <i class="fas fa-save"></i>
+                    <span>Save</span>
+                </button>
+                <div class="search-container">
+                    <i class="fas fa-search"></i>
+                    <input type="text" id="searchInput" placeholder="Search...">
+                </div>
+            </div>
+            <div class="toolbar-group">
+                <i class="fas fa-lock edit-lock" id="editLock" title="Click to edit (password: admin)"></i>
+                <select id="languageSelect">
+                    <option value="en">English</option>
+                    <option value="my">မြန်မာ</option>
+                    <option value="zh">中文</option>
+                </select>
+                <button class="logout" id="logoutBtn">
+                    <i class="fas fa-sign-out-alt"></i>
+                    <span>Logout</span>
+                </button>
+            </div>
+        </div>
+
+        <table id="dataTable">
+            <thead>
+                <tr>
+                    <th data-col="0">Date<div class="resize-handle"></div><div class="column-width-display"></div></th>
+                    <th data-col="1">Maintenance<div class="resize-handle"></div><div class="column-width-display"></div></th>
+                    <th data-col="2">Member<div class="resize-handle"></div><div class="column-width-display"></div></th>
+                    <th data-col="3">Group<div class="resize-handle"></div><div class="column-width-display"></div></th>
+                    <th data-col="4">1st Order<div class="resize-handle"></div><div class="column-width-display"></div></th>
+                    <th data-col="5">F-up<div class="resize-handle"></div><div class="column-width-display"></div></th>
+                    <th data-col="6">2nd Order<div class="resize-handle"></div><div class="column-width-display"></div></th>
+                    <th data-col="7">F-up<div class="resize-handle"></div><div class="column-width-display"></div></th>
+                    <th data-col="8">3rd Order<div class="resize-handle"></div><div class="column-width-display"></div></th>
+                    <th data-col="9">F-up<div class="resize-handle"></div><div class="column-width-display"></div></th>
+                    <th data-col="10">Tax<div class="resize-handle"></div><div class="column-width-display"></div></th>
+                    <th data-col="11">F-up<div class="resize-handle"></div><div class="column-width-display"></div></th>
+                    <th data-col="12">Bank Card<div class="resize-handle"></div><div class="column-width-display"></div></th>
+                    <th data-col="13">F-up<div class="resize-handle"></div><div class="column-width-display"></div></th>
+                    <th data-col="14">Split Pay<div class="resize-handle"></div><div class="column-width-display"></div></th>
+                    <th data-col="15">F-up<div class="resize-handle"></div><div class="column-width-display"></div></th>
+                    <th data-col="16">Last Order<div class="resize-handle"></div><div class="column-width-display"></div></th>
+                    <th data-col="17">Withdraw<div class="resize-handle"></div><div class="column-width-display"></div></th>
+                    <th data-col="18">M2 Pay<div class="resize-handle"></div><div class="column-width-display"></div></th>
+                    <th data-col="19">Emergency<div class="resize-handle"></div><div class="column-width-display"></div></th>
+                    <th data-col="20">Remarks<div class="resize-handle"></div><div class="column-width-display"></div></th>
+                    <th data-col="21">Actions<div class="resize-handle"></div><div class="column-width-display"></div></th>
+                </tr>
+            </thead>
+            <tbody>
+                <!-- Sample row -->
+                <tr>
+                    <td><input type="date" value="2023-01-01" disabled></td>
+                    <td><input type="text" value="Ah Plan" placeholder="Ah Pian" disabled></td>
+                    <td><input type="text" value="Account" placeholder="Account" disabled></td>
+                    <td><input type="text" value="Group" placeholder="Group" disabled></td>
+                    <td><input type="text" value="1st" placeholder="1st" disabled></td>
+                    <td><input type="text" value="F-up" placeholder="F-up" disabled></td>
+                    <td><input type="text" value="2nd" placeholder="2nd" disabled></td>
+                    <td><input type="text" value="F-up" placeholder="F-up" disabled></td>
+                    <td><input type="text" value="3rd" placeholder="3rd" disabled></td>
+                    <td><input type="text" value="F-up" placeholder="F-up" disabled></td>
+                    <td><input type="text" value="Tax" placeholder="Tax" disabled></td>
+                    <td><input type="text" value="F-up" placeholder="F-up" disabled></td>
+                    <td><input type="text" value="Bank" placeholder="Bank" disabled></td>
+                    <td><input type="text" value="F-up" placeholder="F-up" disabled></td>
+                    <td><input type="text" value="Split" placeholder="Split" disabled></td>
+                    <td><input type="text" value="F-up" placeholder="F-up" disabled></td>
+                    <td><input type="text" value="Last" placeholder="Last" disabled></td>
+                    <td><input type="text" value="Withdraw" placeholder="Withdraw" disabled></td>
+                    <td><input type="text" value="M2" placeholder="M2" disabled></td>
+                    <td><input type="text" value="Emergency" placeholder="Emergency" disabled></td>
+                    <td><input type="text" value="Notes" placeholder="Notes" disabled></td>
+                    <td>
+                        <button class="delete-btn" style="background-color: #f44336;" disabled>
+                            <i class="fas fa-trash"></i>
+                        </button>
+                    </td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+
+    <!-- Password Modal -->
+    <div id="passwordModal" class="password-modal">
+        <div class="modal-content">
+            <h3>Enter Password to Edit</h3>
+            <input type="password" id="passwordInput" placeholder="Password (default: admin)">
+            <div style="display: flex; justify-content: space-between; margin-top: 15px;">
+                <button id="cancelPassword" style="background-color: #f44336;">Cancel</button>
+                <button id="submitPassword">Submit</button>
+            </div>
+            <p id="passwordError">Incorrect password!</p>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // Configuration
+            const PASSWORD = "admin"; // Default password
+            let editMode = false;
+            let isCompactMode = false;
+            
+            // DOM Elements
+            const table = document.getElementById('dataTable');
+            const tbody = table.querySelector('tbody');
+            const editLock = document.getElementById('editLock');
+            const passwordModal = document.getElementById('passwordModal');
+            const passwordInput = document.getElementById('passwordInput');
+            const submitPassword = document.getElementById('submitPassword');
+            const cancelPassword = document.getElementById('cancelPassword');
+            const passwordError = document.getElementById('passwordError');
+            
+            // Initialize table with saved data
+            function initializeTable() {
+                loadColumnWidths();
+                loadTableData();
+                setupColumnResizing();
+                setupColumnHover();
+            }
+            
+            // Load saved column widths
+            function loadColumnWidths() {
+                const savedWidths = JSON.parse(localStorage.getItem('columnWidths')) || {};
+                const headers = table.querySelectorAll('th');
+                
+                headers.forEach(header => {
+                    const colIndex = header.getAttribute('data-col');
+                    if (savedWidths[colIndex]) {
+                        header.style.width = savedWidths[colIndex];
+                    } else {
+                        // Set default widths for some columns
+                        if (colIndex === '0') header.style.width = '120px'; // Date
+                        else if (colIndex === '21') header.style.width = '90px'; // Actions
+                        else header.style.width = '100px'; // Others
+                    }
+                });
+            }
+            
+            // Setup column resizing
+            function setupColumnResizing() {
+                const headers = table.querySelectorAll('th');
+                let isResizing = false;
+                let currentCol, startX, currentColWidth;
+                
+                headers.forEach(header => {
+                    const handle = header.querySelector('.resize-handle');
+                    const widthDisplay = header.querySelector('.column-width-display');
+                    
+                    handle.addEventListener('mousedown', (e) => {
+                        if (!editMode) return;
+                        
+                        isResizing = true;
+                        currentCol = header;
+                        startX = e.clientX;
+                        currentColWidth = currentCol.offsetWidth;
+                        
+                        // Show width display
+                        widthDisplay.textContent = `${currentColWidth}px`;
+                        widthDisplay.style.display = 'block';
+                        
+                        document.body.style.cursor = 'col-resize';
+                        document.body.style.userSelect = 'none';
+                        
+                        e.preventDefault();
+                    });
+                });
+                
+                document.addEventListener('mousemove', (e) => {
+                    if (!isResizing) return;
+                    
+                    const dx = e.clientX - startX;
+                    const newWidth = currentColWidth + dx;
+                    
+                    if (newWidth > 50) { // Minimum width
+                        currentCol.style.width = `${newWidth}px`;
+                        currentCol.querySelector('.column-width-display').textContent = `${newWidth}px`;
+                        table.style.width = 'auto'; // Allow table to expand
+                    }
+                });
+                
+                document.addEventListener('mouseup', () => {
+                    if (isResizing) {
+                        isResizing = false;
+                        document.body.style.cursor = '';
+                        document.body.style.userSelect = '';
+                        
+                        // Hide width display
+                        const widthDisplay = currentCol.querySelector('.column-width-display');
+                        widthDisplay.style.display = 'none';
+                        
+                        saveColumnWidths();
+                    }
+                });
+            }
+            
+            // Show column width on hover
+            function setupColumnHover() {
+                const headers = table.querySelectorAll('th');
+                
+                headers.forEach(header => {
+                    const widthDisplay = header.querySelector('.column-width-display');
+                    
+                    header.addEventListener('mouseenter', () => {
+                        widthDisplay.textContent = `${header.offsetWidth}px`;
+                        widthDisplay.style.display = 'block';
+                    });
+                    
+                    header.addEventListener('mouseleave', () => {
+                        if (!isResizing) {
+                            widthDisplay.style.display = 'none';
+                        }
+                    });
+                });
+            }
+            
+            // Save column widths to localStorage
+            function saveColumnWidths() {
+                const headers = table.querySelectorAll('th');
+                const columnWidths = {};
+                
+                headers.forEach(header => {
+                    const colIndex = header.getAttribute('data-col');
+                    columnWidths[colIndex] = header.style.width;
+                });
+                
+                localStorage.setItem('columnWidths', JSON.stringify(columnWidths));
+            }
+            
+            // Load table data
+            function loadTableData() {
+                const savedData = localStorage.getItem('tableData');
+                if (savedData) {
+                    const data = JSON.parse(savedData);
+                    tbody.innerHTML = '';
+                    
+                    data.forEach(rowData => {
+                        addTableRow(rowData);
+                    });
+                }
+            }
+            
+            // Add a new row to the table
+            function addTableRow(rowData = {}) {
+                const newRow = document.createElement('tr');
+                
+                newRow.innerHTML = `
+                    <td><input type="date" value="${rowData.column0 || ''}" ${editMode ? '' : 'disabled'}></td>
+                    <td><input type="text" value="${rowData.column1 || ''}" placeholder="Ah Pian" ${editMode ? '' : 'disabled'}></td>
+                    <td><input type="text" value="${rowData.column2 || ''}" placeholder="Account" ${editMode ? '' : 'disabled'}></td>
+                    <td><input type="text" value="${rowData.column3 || ''}" placeholder="Group" ${editMode ? '' : 'disabled'}></td>
+                    <td><input type="text" value="${rowData.column4 || ''}" placeholder="1st" ${editMode ? '' : 'disabled'}></td>
+                    <td><input type="text" value="${rowData.column5 || ''}" placeholder="F-up" ${editMode ? '' : 'disabled'}></td>
+                    <td><input type="text" value="${rowData.column6 || ''}" placeholder="2nd" ${editMode ? '' : 'disabled'}></td>
+                    <td><input type="text" value="${rowData.column7 || ''}" placeholder="F-up" ${editMode ? '' : 'disabled'}></td>
+                    <td><input type="text" value="${rowData.column8 || ''}" placeholder="3rd" ${editMode ? '' : 'disabled'}></td>
+                    <td><input type="text" value="${rowData.column9 || ''}" placeholder="F-up" ${editMode ? '' : 'disabled'}></td>
+                    <td><input type="text" value="${rowData.column10 || ''}" placeholder="Tax" ${editMode ? '' : 'disabled'}></td>
+                    <td><input type="text" value="${rowData.column11 || ''}" placeholder="F-up" ${editMode ? '' : 'disabled'}></td>
+                    <td><input type="text" value="${rowData.column12 || ''}" placeholder="Bank" ${editMode ? '' : 'disabled'}></td>
+                    <td><input type="text" value="${rowData.column13 || ''}" placeholder="F-up" ${editMode ? '' : 'disabled'}></td>
+                    <td><input type="text" value="${rowData.column14 || ''}" placeholder="Split" ${editMode ? '' : 'disabled'}></td>
+                    <td><input type="text" value="${rowData.column15 || ''}" placeholder="F-up" ${editMode ? '' : 'disabled'}></td>
+                    <td><input type="text" value="${rowData.column16 || ''}" placeholder="Last" ${editMode ? '' : 'disabled'}></td>
+                    <td><input type="text" value="${rowData.column17 || ''}" placeholder="Withdraw" ${editMode ? '' : 'disabled'}></td>
+                    <td><input type="text" value="${rowData.column18 || ''}" placeholder="M2" ${editMode ? '' : 'disabled'}></td>
+                    <td><input type="text" value="${rowData.column19 || ''}" placeholder="Emergency" ${editMode ? '' : 'disabled'}></td>
+                    <td><input type="text" value="${rowData.column20 || ''}" placeholder="Notes" ${editMode ? '' : 'disabled'}></td>
+                    <td>
+                        <button class="delete-btn" style="background-color: #f44336;" ${editMode ? '' : 'disabled'}>
+                            <i class="fas fa-trash"></i>
+                        </button>
+                    </td>
+                `;
+                
+                tbody.appendChild(newRow);
+                
+                // Add delete button event
+                newRow.querySelector('.delete-btn').addEventListener('click', function() {
+                    if (editMode) {
+                        tbody.removeChild(newRow);
+                        saveTableData();
+                    }
+                });
+                
+                // Focus on first input if new row
+                if (!rowData.column0) {
+                    setTimeout(() => {
+                        newRow.querySelector('input').focus();
+                    }, 0);
+                }
+            }
+            
+            // Save table data
+            function saveTableData() {
+                const rows = tbody.querySelectorAll('tr');
+                const data = [];
+                
+                rows.forEach(row => {
+                    const rowData = {};
+                    const inputs = row.querySelectorAll('input');
+                    
+                    inputs.forEach((input, index) => {
+                        rowData[`column${index}`] = input.value;
+                    });
+                    
+                    data.push(rowData);
+                });
+                
+                localStorage.setItem('tableData', JSON.stringify(data));
+            }
+            
+            // Toggle edit mode
+            function toggleEditMode() {
+                editMode = !editMode;
+                
+                if (editMode) {
+                    editLock.classList.remove('fa-lock');
+                    editLock.classList.add('fa-unlock', 'unlocked');
+                    document.getElementById('addRowBtn').disabled = false;
+                } else {
+                    editLock.classList.remove('fa-unlock', 'unlocked');
+                    editLock.classList.add('fa-lock');
+                    document.getElementById('addRowBtn').disabled = true;
+                }
+                
+                // Enable/disable all inputs
+                tbody.querySelectorAll('input').forEach(input => {
+                    input.disabled = !editMode;
+                });
+                
+                // Enable/disable delete buttons
+                tbody.querySelectorAll('.delete-btn').forEach(btn => {
+                    btn.disabled = !editMode;
+                });
+            }
+            
+            // Toggle compact mode
+            function toggleCompactMode() {
+                isCompactMode = !isCompactMode;
+                
+                if (isCompactMode) {
+                    table.classList.add('compact-mode');
+                    document.getElementById('toggleSizeBtn').innerHTML = '<i class="fas fa-compress"></i><span>Normal Size</span>';
+                } else {
+                    table.classList.remove('compact-mode');
+                    document.getElementById('toggleSizeBtn').innerHTML = '<i class="fas fa-expand"></i><span>Compact Mode</span>';
+                }
+                
+                // Refresh column widths after mode change
+                setTimeout(saveColumnWidths, 100);
+            }
+            
+            // Event Listeners
+            document.getElementById('addRowBtn').addEventListener('click', function() {
+                if (editMode) {
+                    addTableRow();
+                    saveTableData();
+                }
+            });
+            
+            document.getElementById('saveBtn').addEventListener('click', function() {
+                saveTableData();
+                saveColumnWidths();
+                alert('Data saved successfully!');
+            });
+            
+            document.getElementById('toggleSizeBtn').addEventListener('click', toggleCompactMode);
+            
+            editLock.addEventListener('click', function() {
+                if (!editMode) {
+                    passwordModal.style.display = 'block';
+                    passwordInput.focus();
+                } else {
+                    toggleEditMode();
+                }
+            });
+            
+            submitPassword.addEventListener('click', function() {
+                if (passwordInput.value === PASSWORD) {
+                    passwordError.style.display = 'none';
+                    passwordModal.style.display = 'none';
+                    passwordInput.value = '';
+                    toggleEditMode();
+                } else {
+                    passwordError.style.display = 'block';
+                }
+            });
+            
+            cancelPassword.addEventListener('click', function() {
+                passwordModal.style.display = 'none';
+                passwordError.style.display = 'none';
+                passwordInput.value = '';
+            });
+            
+            document.getElementById('searchInput').addEventListener('input', function() {
+                const searchTerm = this.value.toLowerCase();
+                const rows = tbody.querySelectorAll('tr');
+                
+                rows.forEach(row => {
+                    const inputs = row.querySelectorAll('input');
+                    let found = false;
+                    
+                    inputs.forEach(input => {
+                        if (input.value.toLowerCase().includes(searchTerm)) {
+                            found = true;
+                        }
+                    });
+                    
+                    row.style.display = found ? '' : 'none';
+                });
+            });
+            
+            // Auto-save when inputs change
+            tbody.addEventListener('change', function(e) {
+                if (e.target.tagName === 'INPUT' && editMode) {
+                    saveTableData();
+                }
+            });
+            
+            // Close modal when clicking outside
+            window.addEventListener('click', function(event) {
+                if (event.target === passwordModal) {
+                    passwordModal.style.display = 'none';
+                    passwordError.style.display = 'none';
+                    passwordInput.value = '';
+                }
+            });
+            
+            // Initialize the table
+            initializeTable();
+        });
+    </script>
+</body>
+</html>

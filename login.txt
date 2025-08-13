@@ -1,0 +1,348 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Login with Terms and Conditions</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            margin: 0;
+            padding: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            background: url('https://wallpapers.com/images/hd/customer-magnifying-glass-vzb44nymzmdhxy94.jpg') no-repeat center center fixed;
+            background-size: cover;
+            position: relative;
+        }
+        
+        body::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.5);
+            z-index: 0;
+        }
+        
+        .login-container {
+            background: rgba(255, 255, 255, 0.95);
+            padding: 40px;
+            border-radius: 12px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
+            width: 100%;
+            max-width: 400px;
+            position: relative;
+            z-index: 1;
+        }
+        
+        .login-header {
+            text-align: center;
+            margin-bottom: 25px;
+        }
+        
+        .login-header h1 {
+            color: #2c3e50;
+            font-size: 28px;
+            margin-bottom: 10px;
+            font-weight: 600;
+        }
+        
+        .input-group {
+            margin-bottom: 20px;
+        }
+        
+        .input-group label {
+            display: block;
+            margin-bottom: 8px;
+            color: #2c3e50;
+            font-weight: 500;
+            font-size: 14px;
+        }
+        
+        .input-group input {
+            width: 100%;
+            padding: 14px;
+            border: 1px solid #e0e0e0;
+            border-radius: 6px;
+            font-size: 16px;
+            transition: all 0.3s;
+        }
+        
+        .input-group input:focus {
+            outline: none;
+            border-color: #3498db;
+            box-shadow: 0 0 0 3px rgba(52, 152, 219, 0.2);
+        }
+        
+        .options {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+            font-size: 14px;
+        }
+        
+        .terms-checkbox {
+            margin: 20px 0;
+            display: flex;
+            align-items: flex-start;
+        }
+        
+        .terms-checkbox input {
+            margin-right: 10px;
+            margin-top: 3px;
+        }
+        
+        .terms-checkbox label {
+            font-size: 14px;
+            color: #555;
+        }
+        
+        .terms-checkbox a {
+            color: #3498db;
+            text-decoration: none;
+        }
+        
+        .terms-checkbox a:hover {
+            text-decoration: underline;
+        }
+        
+        .login-btn {
+            width: 100%;
+            padding: 14px;
+            background: linear-gradient(135deg, #3498db, #2c3e50);
+            color: white;
+            border: none;
+            border-radius: 6px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+            margin-bottom: 15px;
+            opacity: 0.7;
+            pointer-events: none;
+        }
+        
+        .login-btn.active {
+            opacity: 1;
+            pointer-events: auto;
+        }
+        
+        .login-btn:hover {
+            background: linear-gradient(135deg, #2980b9, #1a252f);
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+        }
+        
+        .register-link {
+            text-align: center;
+            color: #7f8c8d;
+            font-size: 14px;
+        }
+        
+        .register-link a {
+            color: #3498db;
+            text-decoration: none;
+            font-weight: 500;
+        }
+        
+        .register-link a:hover {
+            text-decoration: underline;
+        }
+        
+        /* Modal styles */
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 2;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            overflow: auto;
+            background-color: rgba(0,0,0,0.7);
+        }
+        
+        .modal-content {
+            background-color: #fefefe;
+            margin: 5% auto;
+            padding: 30px;
+            border-radius: 8px;
+            width: 80%;
+            max-width: 700px;
+            max-height: 80vh;
+            overflow-y: auto;
+        }
+        
+        .close {
+            color: #aaa;
+            float: right;
+            font-size: 28px;
+            font-weight: bold;
+            cursor: pointer;
+        }
+        
+        .close:hover {
+            color: #333;
+        }
+        
+        /* Responsive design */
+        @media (max-width: 480px) {
+            .login-container {
+                padding: 30px 20px;
+                margin: 0 15px;
+            }
+            
+            .modal-content {
+                width: 90%;
+                margin: 10% auto;
+                padding: 20px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="login-container">
+        <div class="login-header">
+            <h1>Welcome Back</h1>
+        </div>
+        
+        <form id="loginForm">
+            <div class="input-group">
+                <label for="username">Username</label>
+                <input type="text" id="username" placeholder="Enter your username" required>
+            </div>
+            
+            <div class="input-group">
+                <label for="password">Password</label>
+                <input type="password" id="password" placeholder="Enter your password" required>
+            </div>
+            
+            <div class="options">
+                <div class="remember-me">
+                    <input type="checkbox" id="remember">
+                    <label for="remember">Remember me</label>
+                </div>
+                <a href="#" class="forgot-password">Forgot password?</a>
+            </div>
+            
+            <div class="terms-checkbox">
+                <input type="checkbox" id="agreeTerms" required>
+                <label for="agreeTerms">I have read and agree to the <a href="#" id="termsLink">Terms and Conditions</a></label>
+            </div>
+            
+            <button type="submit" class="login-btn" id="loginBtn" disabled>Login</button>
+            
+            <div class="register-link">
+                Don't have an account? <a href="#">Register</a>
+            </div>
+        </form>
+    </div>
+
+    <!-- Terms Modal -->
+    <div id="termsModal" class="modal">
+        <div class="modal-content">
+            <span class="close">&times;</span>
+            <h2>Terms and Conditions</h2>
+            
+            <h3>Data Protection</h3>
+            <p>We are committed to safeguarding our customers' personal information and preventing any unauthorized use at all times.</p>
+            
+            <h3>Accurate Information Submission</h3>
+            <p>Users must provide accurate and complete personal information when accessing the website. Any inaccurate information is subject to rejection.</p>
+            
+            <h3>Compliance with Terms</h3>
+            <p>By logging in, you agree to fully comply with these Terms and Conditions. Failure to comply will result in denial of access.</p>
+            
+            <h3>User Responsibility</h3>
+            <p>Users are responsible for maintaining the security and confidentiality of their personal data.</p>
+            
+            <h3>Modifications</h3>
+            <p>These Terms and Conditions may be updated as necessary, and users will be notified in advance of any changes.</p>
+            
+            <div style="text-align: center; margin-top: 30px;">
+                <button id="acceptTermsBtn" style="padding: 10px 20px; background: #3498db; color: white; border: none; border-radius: 4px; cursor: pointer;">I Accept the Terms</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // DOM elements
+        const termsCheckbox = document.getElementById('agreeTerms');
+        const termsLink = document.getElementById('termsLink');
+        const termsModal = document.getElementById('termsModal');
+        const closeBtn = document.querySelector('.close');
+        const acceptTermsBtn = document.getElementById('acceptTermsBtn');
+        const loginBtn = document.getElementById('loginBtn');
+        const loginForm = document.getElementById('loginForm');
+        
+        // Open terms modal
+        termsLink.addEventListener('click', function(e) {
+            e.preventDefault();
+            termsModal.style.display = 'block';
+        });
+        
+        // Close terms modal
+        closeBtn.addEventListener('click', function() {
+            termsModal.style.display = 'none';
+        });
+        
+        // Accept terms button
+        acceptTermsBtn.addEventListener('click', function() {
+            termsCheckbox.checked = true;
+            checkTerms();
+            termsModal.style.display = 'none';
+        });
+        
+        // Close modal when clicking outside
+        window.addEventListener('click', function(e) {
+            if (e.target === termsModal) {
+                termsModal.style.display = 'none';
+            }
+        });
+        
+        // Check terms checkbox state
+        function checkTerms() {
+            if (termsCheckbox.checked) {
+                loginBtn.classList.add('active');
+                loginBtn.disabled = false;
+            } else {
+                loginBtn.classList.remove('active');
+                loginBtn.disabled = true;
+            }
+        }
+        
+        // Listen for terms checkbox change
+        termsCheckbox.addEventListener('change', checkTerms);
+        
+        // Form submission
+        loginForm.addEventListener('submit', function(e) {
+            e.preventDefault();
+            
+            const username = document.getElementById('username').value;
+            const password = document.getElementById('password').value;
+            
+            if (!termsCheckbox.checked) {
+                alert('Please agree to the Terms and Conditions');
+                return;
+            }
+            
+            if (username === 'admin' && password === '123456') {
+                alert('Login successful! Welcome back.');
+                // You can redirect to another page here:
+                // window.location.href = "dashboard.html";
+            } else {
+                alert('Incorrect username or password. Please try again.');
+            }
+        });
+        
+        // Initialize
+        checkTerms();
+    </script>
+</body>
+</html>
