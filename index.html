@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>A-pian Client List</title>
+</head>
+<body>
+  <h1>A-pian Client List</h1>
+  <div id="server-response">Loading...</div>
+
+  <script>
+    // Server URL
+    const serverUrl = "https://a-pian-client-list.onrender.com";
+
+    // Fetch server data
+    fetch(serverUrl)
+      .then(response => response.text())
+      .then(data => {
+        document.getElementById('server-response').innerText = data;
+      })
+      .catch(err => {
+        document.getElementById('server-response').innerText = "Error connecting to server";
+        console.error(err);
+      });
+  </script>
+</body>
+</html>
